@@ -9,6 +9,7 @@
     "copy": "පිටපත් කරන්න",
     "copyAsPng": "PNG ලෙස පිටපත් කරන්න",
     "copyAsSvg": "SVG ලෙස පිටපත් කරන්න",
+    "copyText": "",
     "bringForward": "ඉදිරියට ගෙන්න",
     "sendToBack": "පසුපසටම ගෙනියන්න",
     "bringToFront": "ඉදිරියටම ගෙන්න",
@@ -64,6 +65,7 @@
     "cartoonist": "සැකිලිරූකරු",
     "fileTitle": "ගොනු නාමය",
     "colorPicker": "පාට තෝරකය",
+    "canvasColors": "",
     "canvasBackground": "කැන්වස පසුබිම",
     "drawingCanvas": "චිත්‍රක කැන්වසය",
     "layers": "ලේයර",
@@ -106,11 +108,29 @@
     "decreaseFontSize": "",
     "increaseFontSize": "",
     "unbindText": "",
+    "bindText": "",
     "link": {
       "edit": "",
       "create": "",
       "label": ""
-    }
+    },
+    "lineEditor": {
+      "edit": "",
+      "exit": ""
+    },
+    "elementLock": {
+      "lock": "",
+      "unlock": "",
+      "lockAll": "",
+      "unlockAll": ""
+    },
+    "statusPublished": "",
+    "sidebarLock": ""
+  },
+  "library": {
+    "noItems": "",
+    "hint_emptyLibrary": "",
+    "hint_emptyPrivateLibrary": ""
   },
   "buttons": {
     "clearReset": "",
@@ -163,7 +183,6 @@
     "uploadedSecurly": "",
     "loadSceneOverridePrompt": "",
     "collabStopOverridePrompt": "",
-    "errorLoadingLibrary": "",
     "errorAddingToLibrary": "",
     "errorRemovingFromLibrary": "",
     "confirmAddLibrary": "",
@@ -179,7 +198,9 @@
     "imageInsertError": "",
     "fileTooBig": "",
     "svgImageInsertError": "",
-    "invalidSVGString": ""
+    "invalidSVGString": "",
+    "cannotResolveCollabServer": "",
+    "importLibraryError": ""
   },
   "toolBar": {
     "selection": "",
@@ -194,7 +215,8 @@
     "library": "",
     "lock": "",
     "penMode": "",
-    "link": ""
+    "link": "",
+    "eraser": ""
   },
   "headings": {
     "canvasActions": "",
@@ -219,7 +241,8 @@
     "placeImage": "",
     "publishLibrary": "",
     "bindTextToElement": "",
-    "deepBoxSelect": ""
+    "deepBoxSelect": "",
+    "eraserRevert": ""
   },
   "canvasError": {
     "cannotShowPreview": "",
@@ -279,14 +302,15 @@
     "howto": "",
     "or": "",
     "preventBinding": "",
-    "shapes": "",
+    "tools": "",
     "shortcuts": "",
     "textFinish": "",
     "textNewLine": "",
     "title": "",
     "view": "",
     "zoomToFit": "",
-    "zoomToSelection": ""
+    "zoomToSelection": "",
+    "toggleElementLock": ""
   },
   "clearCanvasDialog": {
     "title": ""
@@ -328,7 +352,8 @@
       "post": ""
     },
     "noteItems": "",
-    "atleastOneLibItem": ""
+    "atleastOneLibItem": "",
+    "republishWarning": ""
   },
   "publishSuccessDialog": {
     "title": "",

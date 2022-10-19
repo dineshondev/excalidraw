@@ -3,7 +3,7 @@ import { ActionManager } from "../actions/manager";
 import { getNonDeletedElements } from "../element";
 import { ExcalidrawElement, PointerType } from "../element/types";
 import { t } from "../i18n";
-import { useIsMobile } from "../components/App";
+import { useDevice } from "../components/App";
 import {
   canChangeSharpness,
   canHaveArrowheads,
@@ -15,22 +15,28 @@ import {
 } from "../scene";
 import { SHAPES } from "../shapes";
 import { AppState, Zoom } from "../types";
-import { capitalizeString, isTransparent, setCursorForShape } from "../utils";
+import {
+  capitalizeString,
+  isTransparent,
+  updateActiveTool,
+  setCursorForShape,
+} from "../utils";
 import Stack from "./Stack";
 import { ToolButton } from "./ToolButton";
 import { hasStrokeColor } from "../scene/comparisons";
-import { hasBoundTextElement } from "../element/typeChecks";
+import { trackEvent } from "../analytics";
+import { hasBoundTextElement, isBoundToContainer } from "../element/typeChecks";
+import clsx from "clsx";
+import { actionToggleZenMode } from "../actions";
 
 export const SelectedShapeActions = ({
   appState,
   elements,
   renderAction,
-  elementType,
 }: {
   appState: AppState;
   elements: readonly ExcalidrawElement[];
   renderAction: ActionManager["renderAction"];
-  elementType: ExcalidrawElement["type"];
 }) => {
   const targetElements = getTargetElements(
     getNonDeletedElements(elements),
@@ -46,18 +52,21 @@ export const SelectedShapeActions = ({
     isSingleElementBoundContainer = true;
   }
   const isEditing = Boolean(appState.editingElement);
-  const isMobile = useIsMobile();
+  const device = useDevice();
   const isRTL = document.documentElement.getAttribute("dir") === "rtl";
 
   const showFillIcons =
-    hasBackground(elementType) ||
+    hasBackground(appState.activeTool.type) ||
     targetElements.some(
       (element) =>
         hasBackground(element.type) && !isTransparent(element.backgroundColor),
     );
   const showChangeBackgroundIcons =
-    hasBackground(elementType) ||
+    hasBackground(appState.activeTool.type) ||
     targetElements.some((element) => hasBackground(element.type));
+
+  const showLinkIcon =
+    targetElements.length === 1 || isSingleElementBoundContainer;
 
   let commonSelectedType: string | null = targetElements[0]?.type || null;
 
@@ -70,23 +79,23 @@ export const SelectedShapeActions = ({
 
   return (
     <div className="panelColumn">
-      {((hasStrokeColor(elementType) &&
-        elementType !== "image" &&
+      {((hasStrokeColor(appState.activeTool.type) &&
+        appState.activeTool.type !== "image" &&
         commonSelectedType !== "image") ||
         targetElements.some((element) => hasStrokeColor(element.type))) &&
         renderAction("changeStrokeColor")}
       {showChangeBackgroundIcons && renderAction("changeBackgroundColor")}
       {showFillIcons && renderAction("changeFillStyle")}
 
-      {(hasStrokeWidth(elementType) ||
+      {(hasStrokeWidth(appState.activeTool.type) ||
         targetElements.some((element) => hasStrokeWidth(element.type))) &&
         renderAction("changeStrokeWidth")}
 
-      {(elementType === "freedraw" ||
+      {(appState.activeTool.type === "freedraw" ||
         targetElements.some((element) => element.type === "freedraw")) &&
         renderAction("changeStrokeShape")}
 
-      {(hasStrokeStyle(elementType) ||
+      {(hasStrokeStyle(appState.activeTool.type) ||
         targetElements.some((element) => hasStrokeStyle(element.type))) && (
         <>
           {renderAction("changeStrokeStyle")}
@@ -94,12 +103,12 @@ export const SelectedShapeActions = ({
         </>
       )}
 
-      {(canChangeSharpness(elementType) ||
+      {(canChangeSharpness(appState.activeTool.type) ||
         targetElements.some((element) => canChangeSharpness(element.type))) && (
         <>{renderAction("changeSharpness")}</>
       )}
 
-      {(hasText(elementType) ||
+      {(hasText(appState.activeTool.type) ||
         targetElements.some((element) => hasText(element.type))) && (
         <>
           {renderAction("changeFontSize")}
@@ -110,7 +119,11 @@ export const SelectedShapeActions = ({
         </>
       )}
 
-      {(canHaveArrowheads(elementType) ||
+      {targetElements.some(
+        (element) =>
+          hasBoundTextElement(element) || isBoundToContainer(element),
+      ) && renderAction("changeVerticalAlign")}
+      {(canHaveArrowheads(appState.activeTool.type) ||
         targetElements.some((element) => canHaveArrowheads(element.type))) && (
         <>{renderAction("changeArrowhead")}</>
       )}
@@ -164,11 +177,11 @@ export const SelectedShapeActions = ({
         <fieldset>
           <legend>{t("labels.actions")}</legend>
           <div className="buttonList">
-            {!isMobile && renderAction("duplicateSelection")}
-            {!isMobile && renderAction("deleteSelectedElements")}
+            {!device.isMobile && renderAction("duplicateSelection")}
+            {!device.isMobile && renderAction("deleteSelectedElements")}
             {renderAction("group")}
             {renderAction("ungroup")}
-            {targetElements.length === 1 && renderAction("hyperlink")}
+            {showLinkIcon && renderAction("hyperlink")}
           </div>
         </fieldset>
       )}
@@ -178,14 +191,16 @@ export const SelectedShapeActions = ({
 
 export const ShapesSwitcher = ({
   canvas,
-  elementType,
+  activeTool,
   setAppState,
   onImageAction,
+  appState,
 }: {
   canvas: HTMLCanvasElement | null;
-  elementType: ExcalidrawElement["type"];
+  activeTool: AppState["activeTool"];
   setAppState: React.Component<any, AppState>["setState"];
   onImageAction: (data: { pointerType: PointerType | null }) => void;
+  appState: AppState;
 }) => (
   <>
     {SHAPES.map(({ value, icon, key }, index) => {
@@ -200,20 +215,37 @@ export const ShapesSwitcher = ({
           key={value}
           type="radio"
           icon={icon}
-          checked={elementType === value}
+          checked={activeTool.type === value}
           name="editor-current-shape"
           title={`${capitalizeString(label)} — ${shortcut}`}
           keyBindingLabel={`${index + 1}`}
           aria-label={capitalizeString(label)}
           aria-keyshortcuts={shortcut}
           data-testid={value}
+          onPointerDown={({ pointerType }) => {
+            if (!appState.penDetected && pointerType === "pen") {
+              setAppState({
+                penDetected: true,
+                penMode: true,
+              });
+            }
+          }}
           onChange={({ pointerType }) => {
+            if (appState.activeTool.type !== value) {
+              trackEvent("toolbar", value, "ui");
+            }
+            const nextActiveTool = updateActiveTool(appState, {
+              type: value,
+            });
             setAppState({
-              elementType: value,
+              activeTool: nextActiveTool,
               multiElement: null,
               selectedElementIds: {},
             });
-            setCursorForShape(canvas, value);
+            setCursorForShape(canvas, {
+              ...appState,
+              activeTool: nextActiveTool,
+            });
             if (value === "image") {
               onImageAction({ pointerType });
             }
@@ -238,4 +270,46 @@ export const ZoomActions = ({
       {renderAction("resetZoom")}
     </Stack.Row>
   </Stack.Col>
+);
+
+export const UndoRedoActions = ({
+  renderAction,
+  className,
+}: {
+  renderAction: ActionManager["renderAction"];
+  className?: string;
+}) => (
+  <div className={`undo-redo-buttons ${className}`}>
+    {renderAction("undo", { size: "small" })}
+    {renderAction("redo", { size: "small" })}
+  </div>
+);
+
+export const ExitZenModeAction = ({
+  actionManager,
+  showExitZenModeBtn,
+}: {
+  actionManager: ActionManager;
+  showExitZenModeBtn: boolean;
+}) => (
+  <button
+    className={clsx("disable-zen-mode", {
+      "disable-zen-mode--visible": showExitZenModeBtn,
+    })}
+    onClick={() => actionManager.executeAction(actionToggleZenMode)}
+  >
+    {t("buttons.exitZenMode")}
+  </button>
+);
+
+export const FinalizeAction = ({
+  renderAction,
+  className,
+}: {
+  renderAction: ActionManager["renderAction"];
+  className?: string;
+}) => (
+  <div className={`finalize-button ${className}`}>
+    {renderAction("finalize", { size: "small" })}
+  </div>
 );

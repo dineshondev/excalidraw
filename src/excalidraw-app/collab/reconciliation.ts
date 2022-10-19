@@ -1,3 +1,4 @@
+import { PRECEDING_ELEMENT_KEY } from "../../constants";
 import { ExcalidrawElement } from "../../element/types";
 import { AppState } from "../../types";
 
@@ -6,7 +7,7 @@ export type ReconciledElements = readonly ExcalidrawElement[] & {
 };
 
 export type BroadcastedExcalidrawElement = ExcalidrawElement & {
-  parent?: string;
+  [PRECEDING_ELEMENT_KEY]?: string;
 };
 
 const shouldDiscardRemoteElement = (
@@ -71,25 +72,33 @@ export const reconcileElements = (
     const local = localElementsData[remoteElement.id];
 
     if (shouldDiscardRemoteElement(localAppState, local?.[0], remoteElement)) {
-      if (remoteElement.parent) {
-        delete remoteElement.parent;
+      if (remoteElement[PRECEDING_ELEMENT_KEY]) {
+        delete remoteElement[PRECEDING_ELEMENT_KEY];
       }
 
       continue;
     }
 
+    // Mark duplicate for removal as it'll be replaced with the remote element
     if (local) {
-      // mark for removal since it'll be replaced with the remote element
+      // Unless the ramote and local elements are the same element in which case
+      // we need to keep it as we'd otherwise discard it from the resulting
+      // array.
+      if (local[0] === remoteElement) {
+        continue;
+      }
       duplicates.set(local[0], true);
     }
 
     // parent may not be defined in case the remote client is running an older
     // excalidraw version
     const parent =
-      remoteElement.parent || remoteElements[remoteElementIdx - 1]?.id || null;
+      remoteElement[PRECEDING_ELEMENT_KEY] ||
+      remoteElements[remoteElementIdx - 1]?.id ||
+      null;
 
     if (parent != null) {
-      delete remoteElement.parent;
+      delete remoteElement[PRECEDING_ELEMENT_KEY];
 
       // ^ indicates the element is the first in elements array
       if (parent === "^") {

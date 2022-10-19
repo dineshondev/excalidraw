@@ -9,6 +9,7 @@
     "copy": "Kopiuj",
     "copyAsPng": "Skopiuj do schowka jako plik PNG",
     "copyAsSvg": "Skopiuj do schowka jako plik SVG",
+    "copyText": "Skopiuj do schowka jako tekst",
     "bringForward": "Przenieś wyżej",
     "sendToBack": "Przenieś na spód",
     "bringToFront": "Przenieś na wierzch",
@@ -64,6 +65,7 @@
     "cartoonist": "Rysunkowy",
     "fileTitle": "Nazwa pliku",
     "colorPicker": "Paleta kolorów",
+    "canvasColors": "",
     "canvasBackground": "Kolor dokumentu",
     "drawingCanvas": "Obszar roboczy",
     "layers": "Warstwy",
@@ -106,11 +108,29 @@
     "decreaseFontSize": "",
     "increaseFontSize": "",
     "unbindText": "",
+    "bindText": "",
     "link": {
       "edit": "",
       "create": "",
       "label": ""
-    }
+    },
+    "lineEditor": {
+      "edit": "",
+      "exit": ""
+    },
+    "elementLock": {
+      "lock": "",
+      "unlock": "",
+      "lockAll": "",
+      "unlockAll": ""
+    },
+    "statusPublished": "",
+    "sidebarLock": ""
+  },
+  "library": {
+    "noItems": "",
+    "hint_emptyLibrary": "",
+    "hint_emptyPrivateLibrary": ""
   },
   "buttons": {
     "clearReset": "Wyczyść dokument i zresetuj kolor dokumentu",
@@ -158,12 +178,11 @@
     "couldNotLoadInvalidFile": "Nie udało się otworzyć pliku. Wybrany plik jest nieprawidłowy.",
     "importBackendFailed": "Wystąpił błąd podczas importowania pliku.",
     "cannotExportEmptyCanvas": "Najpierw musisz coś narysować, aby zapisać dokument.",
-    "couldNotCopyToClipboard": "Błąd podczas kopiowania. Spróbuj użyć Google Chrome.",
+    "couldNotCopyToClipboard": "",
     "decryptFailed": "Nie udało się odszyfrować danych.",
     "uploadedSecurly": "By zapewnić Ci prywatność, udostępnianie projektu jest zabezpieczone szyfrowaniem end-to-end, co oznacza, że poza tobą i osobą z którą podzielisz się linkiem, nikt nie ma dostępu do tego co udostępniasz.",
     "loadSceneOverridePrompt": "Wczytanie zewnętrznego rysunku zastąpi istniejącą zawartość. Czy chcesz kontynuować?",
     "collabStopOverridePrompt": "Zatrzymanie sesji nadpisze poprzedni, zapisany lokalnie rysunk. Jesteś pewien?\n\n(Jeśli chcesz zachować swój lokalny rysunek, po prostu zamknij zakładkę przeglądarki.)",
-    "errorLoadingLibrary": "Wystąpił błąd podczas wczytywania zewnętrznej biblioteki.",
     "errorAddingToLibrary": "Nie udało się dodać elementu do biblioteki",
     "errorRemovingFromLibrary": "Nie udało się usunąć elementu z biblioteki",
     "confirmAddLibrary": "To doda {{numShapes}} kształtów do twojej biblioteki. Jesteś pewien?",
@@ -179,7 +198,9 @@
     "imageInsertError": "Nie udało się wstawić obrazu. Spróbuj ponownie później...",
     "fileTooBig": "Plik jest zbyt duży. Maksymalny dozwolony rozmiar to {{maxSize}}.",
     "svgImageInsertError": "Nie udało się wstawić obrazu SVG. Znacznik SVG wygląda na nieprawidłowy.",
-    "invalidSVGString": "Nieprawidłowy SVG."
+    "invalidSVGString": "Nieprawidłowy SVG.",
+    "cannotResolveCollabServer": "",
+    "importLibraryError": ""
   },
   "toolBar": {
     "selection": "Zaznaczenie",
@@ -194,7 +215,8 @@
     "library": "Biblioteka",
     "lock": "Zablokuj wybrane narzędzie",
     "penMode": "",
-    "link": ""
+    "link": "",
+    "eraser": "Gumka"
   },
   "headings": {
     "canvasActions": "Narzędzia",
@@ -219,7 +241,8 @@
     "placeImage": "Kliknij, aby umieścić obraz, lub kliknij i przeciągnij, aby ustawić jego rozmiar ręcznie",
     "publishLibrary": "Opublikuj własną bibliotekę",
     "bindTextToElement": "",
-    "deepBoxSelect": ""
+    "deepBoxSelect": "",
+    "eraserRevert": ""
   },
   "canvasError": {
     "cannotShowPreview": "Nie można wyświetlić podglądu",
@@ -279,21 +302,22 @@
     "howto": "Skorzystaj z instrukcji",
     "or": "lub",
     "preventBinding": "Zapobiegaj wiązaniu strzałek",
-    "shapes": "Kształty",
+    "tools": "Narzędzia",
     "shortcuts": "Skróty klawiszowe",
     "textFinish": "Zakończ edycję (edytor tekstu)",
     "textNewLine": "Dodaj nowy wiersz (edytor tekstu)",
     "title": "Pomoc",
     "view": "Widok",
     "zoomToFit": "Powiększ, aby wyświetlić wszystkie elementy",
-    "zoomToSelection": "Przybliż do zaznaczenia"
+    "zoomToSelection": "Przybliż do zaznaczenia",
+    "toggleElementLock": ""
   },
   "clearCanvasDialog": {
     "title": "Wyczyść płótno"
   },
   "publishDialog": {
     "title": "Opublikuj bibliotekę",
-    "itemName": "",
+    "itemName": "Nazwa elementu",
     "authorName": "Nazwa autora",
     "githubUsername": "Nazwa użytkownika na GitHubie",
     "twitterUsername": "Nazwa użytkownika Twitter",
@@ -328,7 +352,8 @@
       "post": "w skrócie, każdy może z nich korzystać bez ograniczeń."
     },
     "noteItems": "",
-    "atleastOneLibItem": "Proszę wybrać co najmniej jeden element biblioteki, by rozpocząć"
+    "atleastOneLibItem": "Proszę wybrać co najmniej jeden element biblioteki, by rozpocząć",
+    "republishWarning": ""
   },
   "publishSuccessDialog": {
     "title": "Biblioteka została przesłana",

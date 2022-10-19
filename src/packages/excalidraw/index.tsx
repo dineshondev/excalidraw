@@ -1,6 +1,4 @@
 import React, { useEffect, forwardRef } from "react";
-import "./publicPath";
-
 import { InitializeApp } from "../../components/InitializeApp";
 import App from "../../components/App";
 
@@ -10,8 +8,10 @@ import "../../css/styles.scss";
 import { AppProps, ExcalidrawAPIRefValue, ExcalidrawProps } from "../../types";
 import { defaultLang } from "../../i18n";
 import { DEFAULT_UI_OPTIONS } from "../../constants";
+import { Provider } from "jotai";
+import { jotaiScope, jotaiStore } from "../../jotai";
 
-const Excalidraw = (props: ExcalidrawProps) => {
+const ExcalidrawBase = (props: ExcalidrawProps) => {
   const {
     onChange,
     initialData,
@@ -21,6 +21,7 @@ const Excalidraw = (props: ExcalidrawProps) => {
     onPointerUpdate,
     renderTopRightUI,
     renderFooter,
+    renderSidebar,
     langCode = defaultLang.code,
     viewModeEnabled,
     zenModeEnabled,
@@ -36,11 +37,14 @@ const Excalidraw = (props: ExcalidrawProps) => {
     autoFocus = false,
     generateIdForFile,
     onLinkOpen,
+    onPointerDown,
+    onScrollChange,
   } = props;
 
   const canvasActions = props.UIOptions?.canvasActions;
 
   const UIOptions: AppProps["UIOptions"] = {
+    ...props.UIOptions,
     canvasActions: {
       ...DEFAULT_UI_OPTIONS.canvasActions,
       ...canvasActions,
@@ -51,6 +55,13 @@ const Excalidraw = (props: ExcalidrawProps) => {
     UIOptions.canvasActions.export.saveFileToDisk =
       canvasActions.export?.saveFileToDisk ??
       DEFAULT_UI_OPTIONS.canvasActions.export.saveFileToDisk;
+  }
+
+  if (
+    UIOptions.canvasActions.toggleTheme === null &&
+    typeof theme === "undefined"
+  ) {
+    UIOptions.canvasActions.toggleTheme = true;
   }
 
   useEffect(() => {
@@ -72,33 +83,38 @@ const Excalidraw = (props: ExcalidrawProps) => {
   }, []);
 
   return (
-    <InitializeApp langCode={langCode}>
-      <App
-        onChange={onChange}
-        initialData={initialData}
-        excalidrawRef={excalidrawRef}
-        onCollabButtonClick={onCollabButtonClick}
-        isCollaborating={isCollaborating}
-        onPointerUpdate={onPointerUpdate}
-        renderTopRightUI={renderTopRightUI}
-        renderFooter={renderFooter}
-        langCode={langCode}
-        viewModeEnabled={viewModeEnabled}
-        zenModeEnabled={zenModeEnabled}
-        gridModeEnabled={gridModeEnabled}
-        libraryReturnUrl={libraryReturnUrl}
-        theme={theme}
-        name={name}
-        renderCustomStats={renderCustomStats}
-        UIOptions={UIOptions}
-        onPaste={onPaste}
-        detectScroll={detectScroll}
-        handleKeyboardGlobally={handleKeyboardGlobally}
-        onLibraryChange={onLibraryChange}
-        autoFocus={autoFocus}
-        generateIdForFile={generateIdForFile}
-        onLinkOpen={onLinkOpen}
-      />
+    <InitializeApp langCode={langCode} theme={theme}>
+      <Provider unstable_createStore={() => jotaiStore} scope={jotaiScope}>
+        <App
+          onChange={onChange}
+          initialData={initialData}
+          excalidrawRef={excalidrawRef}
+          onCollabButtonClick={onCollabButtonClick}
+          isCollaborating={isCollaborating}
+          onPointerUpdate={onPointerUpdate}
+          renderTopRightUI={renderTopRightUI}
+          renderFooter={renderFooter}
+          langCode={langCode}
+          viewModeEnabled={viewModeEnabled}
+          zenModeEnabled={zenModeEnabled}
+          gridModeEnabled={gridModeEnabled}
+          libraryReturnUrl={libraryReturnUrl}
+          theme={theme}
+          name={name}
+          renderCustomStats={renderCustomStats}
+          UIOptions={UIOptions}
+          onPaste={onPaste}
+          detectScroll={detectScroll}
+          handleKeyboardGlobally={handleKeyboardGlobally}
+          onLibraryChange={onLibraryChange}
+          autoFocus={autoFocus}
+          generateIdForFile={generateIdForFile}
+          onLinkOpen={onLinkOpen}
+          onPointerDown={onPointerDown}
+          onScrollChange={onScrollChange}
+          renderSidebar={renderSidebar}
+        />
+      </Provider>
     </InitializeApp>
   );
 };
@@ -169,30 +185,54 @@ const areEqual = (
 const forwardedRefComp = forwardRef<
   ExcalidrawAPIRefValue,
   PublicExcalidrawProps
->((props, ref) => <Excalidraw {...props} excalidrawRef={ref} />);
-export default React.memo(forwardedRefComp, areEqual);
+>((props, ref) => <ExcalidrawBase {...props} excalidrawRef={ref} />);
+
+export const Excalidraw = React.memo(forwardedRefComp, areEqual);
+Excalidraw.displayName = "Excalidraw";
+
 export {
   getSceneVersion,
   isInvisiblySmallElement,
   getNonDeletedElements,
 } from "../../element";
 export { defaultLang, languages } from "../../i18n";
-export { restore, restoreAppState, restoreElements } from "../../data/restore";
+export {
+  restore,
+  restoreAppState,
+  restoreElements,
+  restoreLibraryItems,
+} from "../../data/restore";
 export {
   exportToCanvas,
   exportToBlob,
   exportToSvg,
   serializeAsJSON,
+  serializeLibraryAsJSON,
   loadLibraryFromBlob,
   loadFromBlob,
+  loadSceneOrLibraryFromBlob,
   getFreeDrawSvgPath,
+  exportToClipboard,
+  mergeLibraryItems,
 } from "../../packages/utils";
 export { isLinearElement } from "../../element/typeChecks";
 
-export { FONT_FAMILY, THEME } from "../../constants";
+export { FONT_FAMILY, THEME, MIME_TYPES } from "../../constants";
 
 export {
   mutateElement,
   newElementWith,
   bumpVersion,
 } from "../../element/mutateElement";
+
+export {
+  parseLibraryTokensFromUrl,
+  useHandleLibrary,
+} from "../../data/library";
+
+export {
+  sceneCoordsToViewportCoords,
+  viewportCoordsToSceneCoords,
+} from "../../utils";
+
+export { Sidebar } from "../../components/Sidebar/Sidebar";

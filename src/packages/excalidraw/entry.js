@@ -1,6 +1,7 @@
-import Excalidraw from "./index";
+import "./publicPath";
+import polyfill from "../../polyfill";
 
 import "../../../public/fonts.css";
 
-export default Excalidraw;
+polyfill();
 export * from "./index";

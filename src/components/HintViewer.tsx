@@ -3,7 +3,7 @@ import { NonDeletedExcalidrawElement } from "../element/types";
 import { getSelectedElements } from "../scene";
 
 import "./HintViewer.scss";
-import { AppState } from "../types";
+import { AppState, Device } from "../types";
 import {
   isImageElement,
   isLinearElement,
@@ -11,33 +11,47 @@ import {
   isTextElement,
 } from "../element/typeChecks";
 import { getShortcutKey } from "../utils";
+import { isEraserActive } from "../appState";
 
 interface HintViewerProps {
   appState: AppState;
   elements: readonly NonDeletedExcalidrawElement[];
   isMobile: boolean;
+  device: Device;
 }
 
-const getHints = ({ appState, elements, isMobile }: HintViewerProps) => {
-  const { elementType, isResizing, isRotating, lastPointerDownWith } = appState;
+const getHints = ({
+  appState,
+  elements,
+  isMobile,
+  device,
+}: HintViewerProps) => {
+  const { activeTool, isResizing, isRotating, lastPointerDownWith } = appState;
   const multiMode = appState.multiElement !== null;
 
-  if (elementType === "arrow" || elementType === "line") {
+  if (appState.openSidebar === "library" && !device.canDeviceFitSidebar) {
+    return null;
+  }
+
+  if (isEraserActive(appState)) {
+    return t("hints.eraserRevert");
+  }
+  if (activeTool.type === "arrow" || activeTool.type === "line") {
     if (!multiMode) {
       return t("hints.linearElement");
     }
     return t("hints.linearElementMulti");
   }
 
-  if (elementType === "freedraw") {
+  if (activeTool.type === "freedraw") {
     return t("hints.freeDraw");
   }
 
-  if (elementType === "text") {
+  if (activeTool.type === "text") {
     return t("hints.text");
   }
 
-  if (appState.elementType === "image" && appState.pendingImageElement) {
+  if (appState.activeTool.type === "image" && appState.pendingImageElementId) {
     return t("hints.placeImage");
   }
 
@@ -69,7 +83,7 @@ const getHints = ({ appState, elements, isMobile }: HintViewerProps) => {
     return t("hints.text_editing");
   }
 
-  if (elementType === "selection") {
+  if (activeTool.type === "selection") {
     if (
       appState.draggingElement?.type === "selection" &&
       !appState.editingElement &&
@@ -103,11 +117,13 @@ export const HintViewer = ({
   appState,
   elements,
   isMobile,
+  device,
 }: HintViewerProps) => {
   let hint = getHints({
     appState,
     elements,
     isMobile,
+    device,
   });
   if (!hint) {
     return null;

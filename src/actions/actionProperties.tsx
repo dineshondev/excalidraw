@@ -30,11 +30,15 @@ import {
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextAlignTopIcon,
+  TextAlignBottomIcon,
+  TextAlignMiddleIcon,
 } from "../components/icons";
 import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_FONT_SIZE,
   FONT_FAMILY,
+  VERTICAL_ALIGN,
 } from "../constants";
 import {
   getNonDeletedElements,
@@ -58,6 +62,7 @@ import {
   ExcalidrawTextElement,
   FontFamilyValues,
   TextAlign,
+  VerticalAlign,
 } from "../element/types";
 import { getLanguage, t } from "../i18n";
 import { KEYS } from "../keys";
@@ -161,11 +166,7 @@ const changeFontSize = (
           let newElement: ExcalidrawTextElement = newElementWith(oldElement, {
             fontSize: newFontSize,
           });
-          redrawTextBoundingBox(
-            newElement,
-            getContainerElement(oldElement),
-            appState,
-          );
+          redrawTextBoundingBox(newElement, getContainerElement(oldElement));
 
           newElement = offsetElementAfterFontResize(oldElement, newElement);
 
@@ -193,6 +194,7 @@ const changeFontSize = (
 
 export const actionChangeStrokeColor = register({
   name: "changeStrokeColor",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       ...(value.currentItemStrokeColor && {
@@ -242,6 +244,7 @@ export const actionChangeStrokeColor = register({
 
 export const actionChangeBackgroundColor = register({
   name: "changeBackgroundColor",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       ...(value.currentItemBackgroundColor && {
@@ -284,6 +287,7 @@ export const actionChangeBackgroundColor = register({
 
 export const actionChangeFillStyle = register({
   name: "changeFillStyle",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(elements, appState, (el) =>
@@ -333,6 +337,7 @@ export const actionChangeFillStyle = register({
 
 export const actionChangeStrokeWidth = register({
   name: "changeStrokeWidth",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(elements, appState, (el) =>
@@ -380,6 +385,7 @@ export const actionChangeStrokeWidth = register({
 
 export const actionChangeSloppiness = register({
   name: "changeSloppiness",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(elements, appState, (el) =>
@@ -428,6 +434,7 @@ export const actionChangeSloppiness = register({
 
 export const actionChangeStrokeStyle = register({
   name: "changeStrokeStyle",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(elements, appState, (el) =>
@@ -475,12 +482,17 @@ export const actionChangeStrokeStyle = register({
 
 export const actionChangeOpacity = register({
   name: "changeOpacity",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
-      elements: changeProperty(elements, appState, (el) =>
-        newElementWith(el, {
-          opacity: value,
-        }),
+      elements: changeProperty(
+        elements,
+        appState,
+        (el) =>
+          newElementWith(el, {
+            opacity: value,
+          }),
+        true,
       ),
       appState: { ...appState, currentItemOpacity: value },
       commitToHistory: true,
@@ -495,20 +507,6 @@ export const actionChangeOpacity = register({
         max="100"
         step="10"
         onChange={(event) => updateData(+event.target.value)}
-        onWheel={(event) => {
-          event.stopPropagation();
-          const target = event.target as HTMLInputElement;
-          const STEP = 10;
-          const MAX = 100;
-          const MIN = 0;
-          const value = +target.value;
-
-          if (event.deltaY < 0 && value < MAX) {
-            updateData(value + STEP);
-          } else if (event.deltaY > 0 && value > MIN) {
-            updateData(value - STEP);
-          }
-        }}
         value={
           getFormValue(
             elements,
@@ -524,6 +522,7 @@ export const actionChangeOpacity = register({
 
 export const actionChangeFontSize = register({
   name: "changeFontSize",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return changeFontSize(elements, appState, () => value, value);
   },
@@ -581,6 +580,7 @@ export const actionChangeFontSize = register({
 
 export const actionDecreaseFontSize = register({
   name: "decreaseFontSize",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return changeFontSize(elements, appState, (element) =>
       Math.round(
@@ -602,6 +602,7 @@ export const actionDecreaseFontSize = register({
 
 export const actionIncreaseFontSize = register({
   name: "increaseFontSize",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return changeFontSize(elements, appState, (element) =>
       Math.round(element.fontSize * (1 + FONT_SIZE_RELATIVE_INCREASE_STEP)),
@@ -619,6 +620,7 @@ export const actionIncreaseFontSize = register({
 
 export const actionChangeFontFamily = register({
   name: "changeFontFamily",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(
@@ -632,11 +634,7 @@ export const actionChangeFontFamily = register({
                 fontFamily: value,
               },
             );
-            redrawTextBoundingBox(
-              newElement,
-              getContainerElement(oldElement),
-              appState,
-            );
+            redrawTextBoundingBox(newElement, getContainerElement(oldElement));
             return newElement;
           }
 
@@ -704,6 +702,7 @@ export const actionChangeFontFamily = register({
 
 export const actionChangeTextAlign = register({
   name: "changeTextAlign",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     return {
       elements: changeProperty(
@@ -713,15 +712,9 @@ export const actionChangeTextAlign = register({
           if (isTextElement(oldElement)) {
             const newElement: ExcalidrawTextElement = newElementWith(
               oldElement,
-              {
-                textAlign: value,
-              },
+              { textAlign: value },
             );
-            redrawTextBoundingBox(
-              newElement,
-              getContainerElement(oldElement),
-              appState,
-            );
+            redrawTextBoundingBox(newElement, getContainerElement(oldElement));
             return newElement;
           }
 
@@ -736,51 +729,121 @@ export const actionChangeTextAlign = register({
       commitToHistory: true,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => (
-    <fieldset>
-      <legend>{t("labels.textAlign")}</legend>
-      <ButtonIconSelect<TextAlign | false>
-        group="text-align"
-        options={[
-          {
-            value: "left",
-            text: t("labels.left"),
-            icon: <TextAlignLeftIcon theme={appState.theme} />,
-          },
-          {
-            value: "center",
-            text: t("labels.center"),
-            icon: <TextAlignCenterIcon theme={appState.theme} />,
-          },
-          {
-            value: "right",
-            text: t("labels.right"),
-            icon: <TextAlignRightIcon theme={appState.theme} />,
-          },
-        ]}
-        value={getFormValue(
-          elements,
-          appState,
-          (element) => {
-            if (isTextElement(element)) {
-              return element.textAlign;
+  PanelComponent: ({ elements, appState, updateData }) => {
+    return (
+      <fieldset>
+        <legend>{t("labels.textAlign")}</legend>
+        <ButtonIconSelect<TextAlign | false>
+          group="text-align"
+          options={[
+            {
+              value: "left",
+              text: t("labels.left"),
+              icon: <TextAlignLeftIcon theme={appState.theme} />,
+            },
+            {
+              value: "center",
+              text: t("labels.center"),
+              icon: <TextAlignCenterIcon theme={appState.theme} />,
+            },
+            {
+              value: "right",
+              text: t("labels.right"),
+              icon: <TextAlignRightIcon theme={appState.theme} />,
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            appState,
+            (element) => {
+              if (isTextElement(element)) {
+                return element.textAlign;
+              }
+              const boundTextElement = getBoundTextElement(element);
+              if (boundTextElement) {
+                return boundTextElement.textAlign;
+              }
+              return null;
+            },
+            appState.currentItemTextAlign,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </fieldset>
+    );
+  },
+});
+export const actionChangeVerticalAlign = register({
+  name: "changeVerticalAlign",
+  trackEvent: { category: "element" },
+  perform: (elements, appState, value) => {
+    return {
+      elements: changeProperty(
+        elements,
+        appState,
+        (oldElement) => {
+          if (isTextElement(oldElement)) {
+            const newElement: ExcalidrawTextElement = newElementWith(
+              oldElement,
+              { verticalAlign: value },
+            );
+
+            redrawTextBoundingBox(newElement, getContainerElement(oldElement));
+            return newElement;
+          }
+
+          return oldElement;
+        },
+        true,
+      ),
+      appState: {
+        ...appState,
+      },
+      commitToHistory: true,
+    };
+  },
+  PanelComponent: ({ elements, appState, updateData }) => {
+    return (
+      <fieldset>
+        <ButtonIconSelect<VerticalAlign | false>
+          group="text-align"
+          options={[
+            {
+              value: VERTICAL_ALIGN.TOP,
+              text: t("labels.alignTop"),
+              icon: <TextAlignTopIcon theme={appState.theme} />,
+            },
+            {
+              value: VERTICAL_ALIGN.MIDDLE,
+              text: t("labels.centerVertically"),
+              icon: <TextAlignMiddleIcon theme={appState.theme} />,
+            },
+            {
+              value: VERTICAL_ALIGN.BOTTOM,
+              text: t("labels.alignBottom"),
+              icon: <TextAlignBottomIcon theme={appState.theme} />,
+            },
+          ]}
+          value={getFormValue(elements, appState, (element) => {
+            if (isTextElement(element) && element.containerId) {
+              return element.verticalAlign;
             }
             const boundTextElement = getBoundTextElement(element);
             if (boundTextElement) {
-              return boundTextElement.textAlign;
+              return boundTextElement.verticalAlign;
             }
             return null;
-          },
-          appState.currentItemTextAlign,
-        )}
-        onChange={(value) => updateData(value)}
-      />
-    </fieldset>
-  ),
+          })}
+          onChange={(value) => updateData(value)}
+        />
+      </fieldset>
+    );
+  },
 });
 
 export const actionChangeSharpness = register({
   name: "changeSharpness",
+  trackEvent: false,
   perform: (elements, appState, value) => {
     const targetElements = getTargetElements(
       getNonDeletedElements(elements),
@@ -788,10 +851,10 @@ export const actionChangeSharpness = register({
     );
     const shouldUpdateForNonLinearElements = targetElements.length
       ? targetElements.every((el) => !isLinearElement(el))
-      : !isLinearElementType(appState.elementType);
+      : !isLinearElementType(appState.activeTool.type);
     const shouldUpdateForLinearElements = targetElements.length
       ? targetElements.every(isLinearElement)
-      : isLinearElementType(appState.elementType);
+      : isLinearElementType(appState.activeTool.type);
     return {
       elements: changeProperty(elements, appState, (el) =>
         newElementWith(el, {
@@ -831,8 +894,8 @@ export const actionChangeSharpness = register({
           elements,
           appState,
           (element) => element.strokeSharpness,
-          (canChangeSharpness(appState.elementType) &&
-            (isLinearElementType(appState.elementType)
+          (canChangeSharpness(appState.activeTool.type) &&
+            (isLinearElementType(appState.activeTool.type)
               ? appState.currentItemLinearStrokeSharpness
               : appState.currentItemStrokeSharpness)) ||
             null,
@@ -845,6 +908,7 @@ export const actionChangeSharpness = register({
 
 export const actionChangeArrowhead = register({
   name: "changeArrowhead",
+  trackEvent: false,
   perform: (
     elements,
     appState,

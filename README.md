@@ -88,7 +88,7 @@ Try out [`@excalidraw/excalidraw`](https://www.npmjs.com/package/@excalidraw/exc
 
 ### Code Sandbox
 
-- Go to https://codesandbox.io/s/github/excalidraw/excalidraw
+- Go to https://codesandbox.io/p/github/excalidraw/excalidraw
   - You may need to sign in with GitHub and reload the page
 - You can start coding instantly, and even send PRs from there!
 
@@ -128,14 +128,41 @@ For collaboration, you will need to set up [collab server](https://github.com/ex
 
 #### Commands
 
-| Command            | Description                       |
-| ------------------ | --------------------------------- |
-| `yarn`             | Install the dependencies          |
-| `yarn start`       | Run the project                   |
-| `yarn fix`         | Reformat all files with Prettier  |
-| `yarn test`        | Run tests                         |
-| `yarn test:update` | Update test snapshots             |
-| `yarn test:code`   | Test for formatting with Prettier |
+##### Install the dependencies
+
+```
+yarn
+```
+
+##### Run the project
+
+```
+yarn start
+```
+
+##### Reformat all files with Prettier
+
+```
+yarn fix
+```
+
+##### Run tests
+
+```
+yarn test
+```
+
+##### Update test snapshots
+
+```
+yarn test:update
+```
+
+##### Test for formatting with Prettier
+
+```
+yarn test:code
+```
 
 #### Docker Compose
 

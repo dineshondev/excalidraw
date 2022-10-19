@@ -1,12 +1,10 @@
-import { SHAPES } from "../shapes";
 import { updateBoundElements } from "./binding";
 import { getCommonBounds } from "./bounds";
 import { mutateElement } from "./mutateElement";
 import { getPerfectElementSize } from "./sizeHelpers";
-import Scene from "../scene/Scene";
 import { NonDeletedExcalidrawElement } from "./types";
 import { AppState, PointerDownState } from "../types";
-import { getBoundTextElementId } from "./textElement";
+import { getBoundTextElement } from "./textElement";
 import { isSelectedViaGroup } from "../groups";
 
 export const dragSelectedElements = (
@@ -39,16 +37,14 @@ export const dragSelectedElements = (
       // container is part of a group, but we're dragging the container directly
       (appState.editingGroupId && !isSelectedViaGroup(appState, element))
     ) {
-      const boundTextElementId = getBoundTextElementId(element);
-      if (boundTextElementId) {
-        const textElement =
-          Scene.getScene(element)!.getElement(boundTextElementId);
+      const textElement = getBoundTextElement(element);
+      if (textElement) {
         updateElementCoords(
           lockDirection,
           distanceX,
           distanceY,
           pointerDownState,
-          textElement!,
+          textElement,
           offset,
         );
       }
@@ -96,7 +92,7 @@ export const getDragOffsetXY = (
 
 export const dragNewElement = (
   draggingElement: NonDeletedExcalidrawElement,
-  elementType: typeof SHAPES[number]["value"],
+  elementType: AppState["activeTool"]["type"],
   originX: number,
   originY: number,
   x: number,
@@ -109,15 +105,26 @@ export const dragNewElement = (
       true */
   widthAspectRatio?: number | null,
 ) => {
-  if (shouldMaintainAspectRatio) {
+  if (shouldMaintainAspectRatio && draggingElement.type !== "selection") {
     if (widthAspectRatio) {
       height = width / widthAspectRatio;
     } else {
-      ({ width, height } = getPerfectElementSize(
-        elementType,
-        width,
-        y < originY ? -height : height,
-      ));
+      // Depending on where the cursor is at (x, y) relative to where the starting point is
+      // (originX, originY), we use ONLY width or height to control size increase.
+      // This allows the cursor to always "stick" to one of the sides of the bounding box.
+      if (Math.abs(y - originY) > Math.abs(x - originX)) {
+        ({ width, height } = getPerfectElementSize(
+          elementType,
+          height,
+          x < originX ? -width : width,
+        ));
+      } else {
+        ({ width, height } = getPerfectElementSize(
+          elementType,
+          width,
+          y < originY ? -height : height,
+        ));
+      }
 
       if (height < 0) {
         height = -height;

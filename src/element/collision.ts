@@ -35,6 +35,7 @@ import { getShapeForElement } from "../renderer/renderElement";
 import { hasBoundTextElement, isImageElement } from "./typeChecks";
 import { isTextElement } from ".";
 import { isTransparent } from "../utils";
+import { shouldShowBoundingBox } from "./transformHandles";
 
 const isElementDraggableFromInside = (
   element: NonDeletedExcalidrawElement,
@@ -64,7 +65,10 @@ export const hitTest = (
   const threshold = 10 / appState.zoom.value;
   const point: Point = [x, y];
 
-  if (isElementSelected(appState, element)) {
+  if (
+    isElementSelected(appState, element) &&
+    shouldShowBoundingBox([element], appState)
+  ) {
     return isPointHittingElementBoundingBox(element, point, threshold);
   }
 
@@ -646,7 +650,7 @@ const getCorners = (
 
 // Returns intersection of `line` with `segment`, with `segment` moved by
 // `gap` in its polar direction.
-// If intersection conincides with second segment point returns empty array.
+// If intersection coincides with second segment point returns empty array.
 const intersectSegment = (
   line: GA.Line,
   segment: [GA.Point, GA.Point],

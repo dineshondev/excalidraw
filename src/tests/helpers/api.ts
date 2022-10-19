@@ -4,6 +4,8 @@ import {
   ExcalidrawTextElement,
   ExcalidrawLinearElement,
   ExcalidrawFreeDrawElement,
+  ExcalidrawImageElement,
+  FileId,
 } from "../../element/types";
 import { newElement, newTextElement, newLinearElement } from "../../element";
 import { DEFAULT_VERTICAL_ALIGN } from "../../constants";
@@ -13,7 +15,9 @@ import fs from "fs";
 import util from "util";
 import path from "path";
 import { getMimeType } from "../../data/blob";
-import { newFreeDrawElement } from "../../element/newElement";
+import { newFreeDrawElement, newImageElement } from "../../element/newElement";
+import { Point } from "../../types";
+import { getSelectedElements } from "../../scene/selection";
 
 const readFile = util.promisify(fs.readFile);
 
@@ -29,10 +33,10 @@ export class API {
     });
   };
 
-  static getSelectedElements = (): ExcalidrawElement[] => {
-    return h.elements.filter(
-      (element) => h.state.selectedElementIds[element.id],
-    );
+  static getSelectedElements = (
+    includeBoundTextElement: boolean = false,
+  ): ExcalidrawElement[] => {
+    return getSelectedElements(h.elements, h.state, includeBoundTextElement);
   };
 
   static getSelectedElement = (): ExcalidrawElement => {
@@ -57,9 +61,10 @@ export class API {
   };
 
   static createElement = <
-    T extends Exclude<ExcalidrawElement["type"], "selection">,
+    T extends Exclude<ExcalidrawElement["type"], "selection"> = "rectangle",
   >({
-    type,
+    // @ts-ignore
+    type = "rectangle",
     id,
     x = 0,
     y = x,
@@ -69,11 +74,12 @@ export class API {
     groupIds = [],
     ...rest
   }: {
-    type: T;
+    type?: T;
     x?: number;
     y?: number;
     height?: number;
     width?: number;
+    angle?: number;
     id?: string;
     isDeleted?: boolean;
     groupIds?: string[];
@@ -98,12 +104,19 @@ export class API {
     containerId?: T extends "text"
       ? ExcalidrawTextElement["containerId"]
       : never;
+    points?: T extends "arrow" | "line" ? readonly Point[] : never;
+    locked?: boolean;
+    fileId?: T extends "image" ? string : never;
+    scale?: T extends "image" ? ExcalidrawImageElement["scale"] : never;
+    status?: T extends "image" ? ExcalidrawImageElement["status"] : never;
   }): T extends "arrow" | "line"
     ? ExcalidrawLinearElement
     : T extends "freedraw"
     ? ExcalidrawFreeDrawElement
     : T extends "text"
     ? ExcalidrawTextElement
+    : T extends "image"
+    ? ExcalidrawImageElement
     : ExcalidrawGenericElement => {
     let element: Mutable<ExcalidrawElement> = null!;
 
@@ -112,6 +125,7 @@ export class API {
     const base = {
       x,
       y,
+      angle: rest.angle ?? 0,
       strokeColor: rest.strokeColor ?? appState.currentItemStrokeColor,
       backgroundColor:
         rest.backgroundColor ?? appState.currentItemBackgroundColor,
@@ -123,6 +137,7 @@ export class API {
       roughness: rest.roughness ?? appState.currentItemRoughness,
       opacity: rest.opacity ?? appState.currentItemOpacity,
       boundElements: rest.boundElements ?? null,
+      locked: rest.locked ?? false,
     };
     switch (type) {
       case "rectangle":
@@ -158,10 +173,24 @@ export class API {
       case "arrow":
       case "line":
         element = newLinearElement({
-          type: type as "arrow" | "line",
+          ...base,
+          width,
+          height,
+          type,
           startArrowhead: null,
           endArrowhead: null,
+          points: rest.points ?? [],
+        });
+        break;
+      case "image":
+        element = newImageElement({
           ...base,
+          width,
+          height,
+          type,
+          fileId: (rest.fileId as string as FileId) ?? null,
+          status: rest.status || "saved",
+          scale: rest.scale || [1, 1],
         });
         break;
     }
@@ -208,9 +237,12 @@ export class API {
       }
     });
 
+    const files = [blob] as File[] & { item: (index: number) => File };
+    files.item = (index: number) => files[index];
+
     Object.defineProperty(fileDropEvent, "dataTransfer", {
       value: {
-        files: [blob],
+        files,
         getData: (type: string) => {
           if (type === blob.type) {
             return text;

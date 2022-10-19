@@ -29,7 +29,13 @@ import { isPathALoop } from "../math";
 import rough from "roughjs/bin/rough";
 import { AppState, BinaryFiles, Zoom } from "../types";
 import { getDefaultAppState } from "../appState";
-import { MAX_DECIMALS_FOR_SVG_EXPORT, MIME_TYPES, SVG_NS } from "../constants";
+import {
+  BOUND_TEXT_PADDING,
+  MAX_DECIMALS_FOR_SVG_EXPORT,
+  MIME_TYPES,
+  SVG_NS,
+  VERTICAL_ALIGN,
+} from "../constants";
 import { getStroke, StrokeOptions } from "perfect-freehand";
 import { getApproxLineHeight } from "../element/textElement";
 
@@ -264,7 +270,11 @@ const drawElementOnCanvas = (
         const lineHeight = element.containerId
           ? getApproxLineHeight(getFontString(element))
           : element.height / lines.length;
-        const verticalOffset = element.height - element.baseline;
+        let verticalOffset = element.height - element.baseline;
+        if (element.verticalAlign === VERTICAL_ALIGN.BOTTOM) {
+          verticalOffset = BOUND_TEXT_PADDING;
+        }
+
         const horizontalOffset =
           element.textAlign === "center"
             ? element.width / 2
@@ -742,12 +752,6 @@ export const renderElement = (
       generateElementShape(element, generator);
 
       if (renderConfig.isExporting) {
-        const elementWithCanvas = generateElementWithCanvas(
-          element,
-          renderConfig,
-        );
-        drawElementFromCanvas(elementWithCanvas, rc, context, renderConfig);
-      } else {
         const [x1, y1, x2, y2] = getElementAbsoluteCoords(element);
         const cx = (x1 + x2) / 2 + renderConfig.scrollX;
         const cy = (y1 + y2) / 2 + renderConfig.scrollY;
@@ -759,6 +763,12 @@ export const renderElement = (
         context.translate(-shiftX, -shiftY);
         drawElementOnCanvas(element, rc, context, renderConfig);
         context.restore();
+      } else {
+        const elementWithCanvas = generateElementWithCanvas(
+          element,
+          renderConfig,
+        );
+        drawElementFromCanvas(elementWithCanvas, rc, context, renderConfig);
       }
 
       break;
@@ -780,6 +790,9 @@ export const renderElement = (
         context.save();
         context.translate(cx, cy);
         context.rotate(element.angle);
+        if (element.type === "image") {
+          context.scale(element.scale[0], element.scale[1]);
+        }
         context.translate(-shiftX, -shiftY);
 
         if (shouldResetImageFilter(element, renderConfig)) {
@@ -914,6 +927,7 @@ export const renderElementToSvg = (
       break;
     }
     case "freedraw": {
+      generateElementShape(element, generator);
       generateFreeDrawShape(element);
       const opacity = element.opacity / 100;
       const shape = getShapeForElement(element);
@@ -939,6 +953,8 @@ export const renderElementToSvg = (
       break;
     }
     case "image": {
+      const width = Math.round(element.width);
+      const height = Math.round(element.height);
       const fileData =
         isInitializedImageElement(element) && files[element.fileId];
       if (fileData) {
@@ -967,17 +983,34 @@ export const renderElementToSvg = (
           use.setAttribute("filter", IMAGE_INVERT_FILTER);
         }
 
-        use.setAttribute("width", `${Math.round(element.width)}`);
-        use.setAttribute("height", `${Math.round(element.height)}`);
+        use.setAttribute("width", `${width}`);
+        use.setAttribute("height", `${height}`);
 
-        use.setAttribute(
+        // We first apply `scale` transforms (horizontal/vertical mirroring)
+        // on the <use> element, then apply translation and rotation
+        // on the <g> element which wraps the <use>.
+        // Doing this separately is a quick hack to to work around compositing
+        // the transformations correctly (the transform-origin was not being
+        // applied correctly).
+        if (element.scale[0] !== 1 || element.scale[1] !== 1) {
+          const translateX = element.scale[0] !== 1 ? -width : 0;
+          const translateY = element.scale[1] !== 1 ? -height : 0;
+          use.setAttribute(
+            "transform",
+            `scale(${element.scale[0]}, ${element.scale[1]}) translate(${translateX} ${translateY})`,
+          );
+        }
+
+        const g = svgRoot.ownerDocument!.createElementNS(SVG_NS, "g");
+        g.appendChild(use);
+        g.setAttribute(
           "transform",
           `translate(${offsetX || 0} ${
             offsetY || 0
           }) rotate(${degree} ${cx} ${cy})`,
         );
 
-        root.appendChild(use);
+        root.appendChild(g);
       }
       break;
     }

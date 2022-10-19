@@ -26,14 +26,6 @@ const mouse = new Pointer("mouse");
 const finger1 = new Pointer("touch", 1);
 const finger2 = new Pointer("touch", 2);
 
-const clickLabeledElement = (label: string) => {
-  const element = document.querySelector(`[aria-label='${label}']`);
-  if (!element) {
-    throw new Error(`No labeled element found: ${label}`);
-  }
-  fireEvent.click(element);
-};
-
 /**
  * This is always called at the end of your test, so usually you don't need to call it.
  * However, if you have a long test, you might want to call it during the test so it's easier
@@ -143,7 +135,7 @@ describe("regression tests", () => {
   for (const [keys, shape, shouldSelect] of [
     [`2${KEYS.R}`, "rectangle", true],
     [`3${KEYS.D}`, "diamond", true],
-    [`4${KEYS.E}`, "ellipse", true],
+    [`4${KEYS.O}`, "ellipse", true],
     [`5${KEYS.A}`, "arrow", true],
     [`6${KEYS.L}`, "line", true],
     [`7${KEYS.X}`, "freedraw", false],
@@ -152,7 +144,7 @@ describe("regression tests", () => {
       it(`key ${key} selects ${shape} tool`, () => {
         Keyboard.keyPress(key);
 
-        expect(h.state.elementType).toBe(shape);
+        expect(h.state.activeTool.type).toBe(shape);
 
         mouse.down(10, 10);
         mouse.up(10, 10);
@@ -168,10 +160,10 @@ describe("regression tests", () => {
     mouse.down(10, 10);
     mouse.up(10, 10);
 
-    clickLabeledElement("Background");
-    clickLabeledElement(t("colors.fa5252"));
-    clickLabeledElement("Stroke");
-    clickLabeledElement(t("colors.5f3dc4"));
+    UI.clickLabeledElement("Background");
+    UI.clickLabeledElement(t("colors.fa5252"));
+    UI.clickLabeledElement("Stroke");
+    UI.clickLabeledElement(t("colors.5f3dc4"));
     expect(API.getSelectedElement().backgroundColor).toBe("#fa5252");
     expect(API.getSelectedElement().strokeColor).toBe("#5f3dc4");
   });
@@ -870,46 +862,42 @@ describe("regression tests", () => {
     expect(API.getSelectedElements().length).toBe(0);
   });
 
-  it(
-    "drags selected elements from point inside common bounding box that doesn't hit any element " +
-      "and keeps elements selected after dragging",
-    () => {
-      UI.clickTool("rectangle");
-      mouse.down();
-      mouse.up(10, 10);
+  it("drags selected elements from point inside common bounding box that doesn't hit any element and keeps elements selected after dragging", () => {
+    UI.clickTool("rectangle");
+    mouse.down();
+    mouse.up(10, 10);
 
-      UI.clickTool("ellipse");
-      mouse.down(100, 100);
-      mouse.up(10, 10);
+    UI.clickTool("ellipse");
+    mouse.down(100, 100);
+    mouse.up(10, 10);
 
-      // Selects first element without deselecting the second element
-      // Second element is already selected because creating it was our last action
-      mouse.reset();
-      Keyboard.withModifierKeys({ shift: true }, () => {
-        mouse.click(5, 5);
-      });
+    // Selects first element without deselecting the second element
+    // Second element is already selected because creating it was our last action
+    mouse.reset();
+    Keyboard.withModifierKeys({ shift: true }, () => {
+      mouse.click(5, 5);
+    });
 
-      expect(API.getSelectedElements().length).toBe(2);
+    expect(API.getSelectedElements().length).toBe(2);
 
-      const { x: firstElementPrevX, y: firstElementPrevY } =
-        API.getSelectedElements()[0];
-      const { x: secondElementPrevX, y: secondElementPrevY } =
-        API.getSelectedElements()[1];
+    const { x: firstElementPrevX, y: firstElementPrevY } =
+      API.getSelectedElements()[0];
+    const { x: secondElementPrevX, y: secondElementPrevY } =
+      API.getSelectedElements()[1];
 
-      // drag elements from point on common bounding box that doesn't hit any of the elements
-      mouse.reset();
-      mouse.down(50, 50);
-      mouse.up(25, 25);
+    // drag elements from point on common bounding box that doesn't hit any of the elements
+    mouse.reset();
+    mouse.down(50, 50);
+    mouse.up(25, 25);
 
-      expect(API.getSelectedElements()[0].x).toEqual(firstElementPrevX + 25);
-      expect(API.getSelectedElements()[0].y).toEqual(firstElementPrevY + 25);
+    expect(API.getSelectedElements()[0].x).toEqual(firstElementPrevX + 25);
+    expect(API.getSelectedElements()[0].y).toEqual(firstElementPrevY + 25);
 
-      expect(API.getSelectedElements()[1].x).toEqual(secondElementPrevX + 25);
-      expect(API.getSelectedElements()[1].y).toEqual(secondElementPrevY + 25);
+    expect(API.getSelectedElements()[1].x).toEqual(secondElementPrevX + 25);
+    expect(API.getSelectedElements()[1].y).toEqual(secondElementPrevY + 25);
 
-      expect(API.getSelectedElements().length).toBe(2);
-    },
-  );
+    expect(API.getSelectedElements().length).toBe(2);
+  });
 
   it(
     "given a group of selected elements with an element that is not selected inside the group common bounding box " +
@@ -946,14 +934,14 @@ describe("regression tests", () => {
 
   it(
     "given a selected element A and a not selected element B with higher z-index than A " +
-      "and given B partialy overlaps A " +
+      "and given B partially overlaps A " +
       "when there's a shift-click on the overlapped section B is added to the selection",
     () => {
       UI.clickTool("rectangle");
       // change background color since default is transparent
       // and transparent elements can't be selected by clicking inside of them
-      clickLabeledElement("Background");
-      clickLabeledElement(t("colors.fa5252"));
+      UI.clickLabeledElement("Background");
+      UI.clickLabeledElement(t("colors.fa5252"));
       mouse.down();
       mouse.up(1000, 1000);
 
@@ -1059,8 +1047,8 @@ describe("regression tests", () => {
     mouse.up(10, 10);
     expect(screen.queryByText(/fill/i)).toBeNull();
 
-    clickLabeledElement("Background");
-    clickLabeledElement(t("colors.fa5252"));
+    UI.clickLabeledElement("Background");
+    UI.clickLabeledElement(t("colors.fa5252"));
     // select rectangle
     mouse.reset();
     mouse.click();

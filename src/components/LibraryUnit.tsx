@@ -1,10 +1,9 @@
 import clsx from "clsx";
 import oc from "open-color";
 import { useEffect, useRef, useState } from "react";
-import { MIME_TYPES } from "../constants";
-import { useIsMobile } from "../components/App";
+import { useDevice } from "../components/App";
 import { exportToSvg } from "../scene/export";
-import { BinaryFiles, LibraryItem } from "../types";
+import { LibraryItem } from "../types";
 import "./LibraryUnit.scss";
 import { CheckboxItem } from "./CheckboxItem";
 
@@ -24,19 +23,19 @@ const PLUS_ICON = (
 export const LibraryUnit = ({
   id,
   elements,
-  files,
   isPending,
   onClick,
   selected,
   onToggle,
+  onDrag,
 }: {
   id: LibraryItem["id"] | /** for pending item */ null;
   elements?: LibraryItem["elements"];
-  files: BinaryFiles;
   isPending?: boolean;
   onClick: () => void;
   selected: boolean;
   onToggle: (id: string, event: React.MouseEvent) => void;
+  onDrag: (id: string, event: React.DragEvent) => void;
 }) => {
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -55,7 +54,7 @@ export const LibraryUnit = ({
           exportBackground: false,
           viewBackgroundColor: oc.white,
         },
-        files,
+        null,
       );
       node.innerHTML = svg.outerHTML;
     })();
@@ -63,10 +62,10 @@ export const LibraryUnit = ({
     return () => {
       node.innerHTML = "";
     };
-  }, [elements, files]);
+  }, [elements]);
 
   const [isHovered, setIsHovered] = useState(false);
-  const isMobile = useIsMobile();
+  const isMobile = useDevice().isMobile;
   const adder = isPending && (
     <div className="library-unit__adder">{PLUS_ICON}</div>
   );
@@ -99,11 +98,12 @@ export const LibraryUnit = ({
             : undefined
         }
         onDragStart={(event) => {
+          if (!id) {
+            event.preventDefault();
+            return;
+          }
           setIsHovered(false);
-          event.dataTransfer.setData(
-            MIME_TYPES.excalidrawlib,
-            JSON.stringify(elements),
-          );
+          onDrag(id, event);
         }}
       />
       {adder}

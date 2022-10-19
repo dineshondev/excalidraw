@@ -48,6 +48,7 @@ type ToolButtonProps =
       type: "radio";
       checked: boolean;
       onChange?(data: { pointerType: PointerType | null }): void;
+      onPointerDown?(data: { pointerType: PointerType }): void;
     });
 
 export const ToolButton = React.forwardRef((props: ToolButtonProps, ref) => {
@@ -149,6 +150,7 @@ export const ToolButton = React.forwardRef((props: ToolButtonProps, ref) => {
       title={props.title}
       onPointerDown={(event) => {
         lastPointerTypeRef.current = event.pointerType || null;
+        props.onPointerDown?.({ pointerType: event.pointerType || null });
       }}
       onPointerUp={() => {
         requestAnimationFrame(() => {
@@ -185,3 +187,5 @@ ToolButton.defaultProps = {
   className: "",
   size: "medium",
 };
+
+ToolButton.displayName = "ToolButton";

@@ -9,20 +9,25 @@ import {
   LibraryItem,
   NormalizedZoomValue,
 } from "../types";
-import { ImportedDataState } from "./types";
-import { getNormalizedDimensions, isInvisiblySmallElement } from "../element";
+import { ImportedDataState, LegacyAppState } from "./types";
+import {
+  getNonDeletedElements,
+  getNormalizedDimensions,
+  isInvisiblySmallElement,
+} from "../element";
 import { isLinearElementType } from "../element/typeChecks";
 import { randomId } from "../random";
 import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_TEXT_ALIGN,
   DEFAULT_VERTICAL_ALIGN,
+  PRECEDING_ELEMENT_KEY,
   FONT_FAMILY,
 } from "../constants";
 import { getDefaultAppState } from "../appState";
 import { LinearElementEditor } from "../element/linearElementEditor";
 import { bumpVersion } from "../element/mutateElement";
-import { getUpdatedTimestamp } from "../utils";
+import { getUpdatedTimestamp, updateActiveTool } from "../utils";
 import { arrayToMap } from "../utils";
 
 type RestoredAppState = Omit<
@@ -30,9 +35,9 @@ type RestoredAppState = Omit<
   "offsetTop" | "offsetLeft" | "width" | "height"
 >;
 
-export const AllowedExcalidrawElementTypes: Record<
-  ExcalidrawElement["type"],
-  true
+export const AllowedExcalidrawActiveTools: Record<
+  AppState["activeTool"]["type"],
+  boolean
 > = {
   selection: true,
   text: true,
@@ -43,6 +48,8 @@ export const AllowedExcalidrawElementTypes: Record<
   image: true,
   arrow: true,
   freedraw: true,
+  eraser: false,
+  custom: true,
 };
 
 export type RestoredDataState = {
@@ -61,13 +68,16 @@ const getFontFamilyByName = (fontFamilyName: string): FontFamilyValues => {
 };
 
 const restoreElementWithProperties = <
-  T extends ExcalidrawElement,
-  K extends Pick<T, keyof Omit<Required<T>, keyof ExcalidrawElement>>,
->(
-  element: Required<T> & {
+  T extends Required<Omit<ExcalidrawElement, "customData">> & {
+    customData?: ExcalidrawElement["customData"];
     /** @deprecated */
     boundElementIds?: readonly ExcalidrawElement["id"][];
+    /** metadata that may be present in elements during collaboration */
+    [PRECEDING_ELEMENT_KEY]?: string;
   },
+  K extends Pick<T, keyof Omit<Required<T>, keyof ExcalidrawElement>>,
+>(
+  element: T,
   extra: Pick<
     T,
     // This extra Pick<T, keyof K> ensure no excess properties are passed.
@@ -76,7 +86,9 @@ const restoreElementWithProperties = <
   > &
     Partial<Pick<ExcalidrawElement, "type" | "x" | "y">>,
 ): T => {
-  const base: Pick<T, keyof ExcalidrawElement> = {
+  const base: Pick<T, keyof ExcalidrawElement> & {
+    [PRECEDING_ELEMENT_KEY]?: string;
+  } = {
     type: extra.type || element.type,
     // all elements must have version > 0 so getSceneVersion() will pick up
     // newly added elements
@@ -106,7 +118,16 @@ const restoreElementWithProperties = <
       : element.boundElements ?? [],
     updated: element.updated ?? getUpdatedTimestamp(),
     link: element.link ?? null,
+    locked: element.locked ?? false,
   };
+
+  if ("customData" in element) {
+    base.customData = element.customData;
+  }
+
+  if (PRECEDING_ELEMENT_KEY in element) {
+    base[PRECEDING_ELEMENT_KEY] = element[PRECEDING_ELEMENT_KEY];
+  }
 
   return {
     ...base,
@@ -192,6 +213,7 @@ const restoreElement = (
         y,
       });
     }
+
     // generic elements
     case "ellipse":
       return restoreElementWithProperties(element, {});
@@ -229,20 +251,74 @@ export const restoreElements = (
   }, [] as ExcalidrawElement[]);
 };
 
+const coalesceAppStateValue = <
+  T extends keyof ReturnType<typeof getDefaultAppState>,
+>(
+  key: T,
+  appState: Exclude<ImportedDataState["appState"], null | undefined>,
+  defaultAppState: ReturnType<typeof getDefaultAppState>,
+) => {
+  const value = appState[key];
+  // NOTE the value! assertion is needed in TS 4.5.5 (fixed in newer versions)
+  return value !== undefined ? value! : defaultAppState[key];
+};
+
+const LegacyAppStateMigrations: {
+  [K in keyof LegacyAppState]: (
+    ImportedDataState: Exclude<ImportedDataState["appState"], null | undefined>,
+    defaultAppState: ReturnType<typeof getDefaultAppState>,
+  ) => [LegacyAppState[K][1], AppState[LegacyAppState[K][1]]];
+} = {
+  isLibraryOpen: (appState, defaultAppState) => {
+    return [
+      "openSidebar",
+      "isLibraryOpen" in appState
+        ? appState.isLibraryOpen
+          ? "library"
+          : null
+        : coalesceAppStateValue("openSidebar", appState, defaultAppState),
+    ];
+  },
+  isLibraryMenuDocked: (appState, defaultAppState) => {
+    return [
+      "isSidebarDocked",
+      appState.isLibraryMenuDocked ??
+        coalesceAppStateValue("isSidebarDocked", appState, defaultAppState),
+    ];
+  },
+};
+
 export const restoreAppState = (
   appState: ImportedDataState["appState"],
   localAppState: Partial<AppState> | null | undefined,
 ): RestoredAppState => {
   appState = appState || {};
-
   const defaultAppState = getDefaultAppState();
   const nextAppState = {} as typeof defaultAppState;
+
+  // first, migrate all legacy AppState properties to new ones. We do it
+  // in one go before migrate the rest of the properties in case the new ones
+  // depend on checking any other key (i.e. they are coupled)
+  for (const legacyKey of Object.keys(
+    LegacyAppStateMigrations,
+  ) as (keyof typeof LegacyAppStateMigrations)[]) {
+    if (legacyKey in appState) {
+      const [nextKey, nextValue] = LegacyAppStateMigrations[legacyKey](
+        appState,
+        defaultAppState,
+      );
+      (nextAppState as any)[nextKey] = nextValue;
+    }
+  }
 
   for (const [key, defaultValue] of Object.entries(defaultAppState) as [
     keyof typeof defaultAppState,
     any,
   ][]) {
+    // if AppState contains a legacy key, prefer that one and migrate its
+    // value to the new one
     const suppliedValue = appState[key];
+
     const localValue = localAppState ? localAppState[key] : undefined;
     (nextAppState as any)[key] =
       suppliedValue !== undefined
@@ -254,9 +330,22 @@ export const restoreAppState = (
 
   return {
     ...nextAppState,
-    elementType: AllowedExcalidrawElementTypes[nextAppState.elementType]
-      ? nextAppState.elementType
-      : "selection",
+    cursorButton: localAppState?.cursorButton || "up",
+    // reset on fresh restore so as to hide the UI button if penMode not active
+    penDetected:
+      localAppState?.penDetected ??
+      (appState.penMode ? appState.penDetected ?? false : false),
+    activeTool: {
+      ...updateActiveTool(
+        defaultAppState,
+        nextAppState.activeTool.type &&
+          AllowedExcalidrawActiveTools[nextAppState.activeTool.type]
+          ? nextAppState.activeTool
+          : { type: "selection" },
+      ),
+      lastActiveToolBeforeEraser: null,
+      locked: nextAppState.activeTool.locked ?? false,
+    },
     // Migrates from previous version where appState.zoom was a number
     zoom:
       typeof appState.zoom === "number"
@@ -264,11 +353,19 @@ export const restoreAppState = (
             value: appState.zoom as NormalizedZoomValue,
           }
         : appState.zoom || defaultAppState.zoom,
+    // when sidebar docked and user left it open in last session,
+    // keep it open. If not docked, keep it closed irrespective of last state.
+    openSidebar:
+      nextAppState.openSidebar === "library"
+        ? nextAppState.isSidebarDocked
+          ? "library"
+          : null
+        : nextAppState.openSidebar,
   };
 };
 
 export const restore = (
-  data: ImportedDataState | null,
+  data: Pick<ImportedDataState, "appState" | "elements" | "files"> | null,
   /**
    * Local AppState (`this.state` or initial state from localStorage) so that we
    * don't overwrite local state with default values (when values not
@@ -285,28 +382,45 @@ export const restore = (
   };
 };
 
+const restoreLibraryItem = (libraryItem: LibraryItem) => {
+  const elements = restoreElements(
+    getNonDeletedElements(libraryItem.elements),
+    null,
+  );
+  return elements.length ? { ...libraryItem, elements } : null;
+};
+
 export const restoreLibraryItems = (
-  libraryItems: NonOptional<ImportedDataState["libraryItems"]>,
+  libraryItems: ImportedDataState["libraryItems"] = [],
   defaultStatus: LibraryItem["status"],
 ) => {
   const restoredItems: LibraryItem[] = [];
   for (const item of libraryItems) {
     // migrate older libraries
     if (Array.isArray(item)) {
-      restoredItems.push({
+      const restoredItem = restoreLibraryItem({
         status: defaultStatus,
         elements: item,
         id: randomId(),
         created: Date.now(),
       });
+      if (restoredItem) {
+        restoredItems.push(restoredItem);
+      }
     } else {
-      const _item = item as MarkOptional<LibraryItem, "id" | "status">;
-      restoredItems.push({
+      const _item = item as MarkOptional<
+        LibraryItem,
+        "id" | "status" | "created"
+      >;
+      const restoredItem = restoreLibraryItem({
         ..._item,
         id: _item.id || randomId(),
         status: _item.status || defaultStatus,
         created: _item.created || Date.now(),
       });
+      if (restoredItem) {
+        restoredItems.push(restoredItem);
+      }
     }
   }
   return restoredItems;

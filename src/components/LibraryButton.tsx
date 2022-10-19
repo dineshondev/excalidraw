@@ -3,6 +3,8 @@ import clsx from "clsx";
 import { t } from "../i18n";
 import { AppState } from "../types";
 import { capitalizeString } from "../utils";
+import { trackEvent } from "../analytics";
+import { useDevice } from "./App";
 
 const LIBRARY_ICON = (
   <svg viewBox="0 0 576 512">
@@ -18,6 +20,7 @@ export const LibraryButton: React.FC<{
   setAppState: React.Component<any, AppState>["setState"];
   isMobile?: boolean;
 }> = ({ appState, setAppState, isMobile }) => {
+  const device = useDevice();
   return (
     <label
       className={clsx(
@@ -34,9 +37,21 @@ export const LibraryButton: React.FC<{
         type="checkbox"
         name="editor-library"
         onChange={(event) => {
-          setAppState({ isLibraryOpen: event.target.checked });
+          document
+            .querySelector(".layer-ui__wrapper")
+            ?.classList.remove("animate");
+          const isOpen = event.target.checked;
+          setAppState({ openSidebar: isOpen ? "library" : null });
+          // track only openings
+          if (isOpen) {
+            trackEvent(
+              "library",
+              "toggleLibrary (open)",
+              `toolbar (${device.isMobile ? "mobile" : "desktop"})`,
+            );
+          }
         }}
-        checked={appState.isLibraryOpen}
+        checked={appState.openSidebar === "library"}
         aria-label={capitalizeString(t("toolBar.library"))}
         aria-keyshortcuts="0"
       />

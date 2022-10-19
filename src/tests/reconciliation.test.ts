@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { PRECEDING_ELEMENT_KEY } from "../constants";
 import { ExcalidrawElement } from "../element/types";
 import {
   BroadcastedExcalidrawElement,
@@ -9,36 +10,64 @@ import { randomInteger } from "../random";
 import { AppState } from "../types";
 
 type Id = string;
-type Ids = Id[];
+type ElementLike = {
+  id: string;
+  version: number;
+  versionNonce: number;
+  [PRECEDING_ELEMENT_KEY]?: string | null;
+};
 
 type Cache = Record<string, ExcalidrawElement | undefined>;
 
-const parseId = (uid: string) => {
-  const [, parent, id, version] = uid.match(
-    /^(?:\((\^|\w+)\))?(\w+)(?::(\d+))?(?:\((\w+)\))?$/,
-  )!;
+const createElement = (opts: { uid: string } | ElementLike) => {
+  let uid: string;
+  let id: string;
+  let version: number | null;
+  let parent: string | null = null;
+  let versionNonce: number | null = null;
+  if ("uid" in opts) {
+    const match = opts.uid.match(
+      /^(?:\((\^|\w+)\))?(\w+)(?::(\d+))?(?:\((\w+)\))?$/,
+    )!;
+    parent = match[1];
+    id = match[2];
+    version = match[3] ? parseInt(match[3]) : null;
+    uid = version ? `${id}:${version}` : id;
+  } else {
+    ({ id, version, versionNonce } = opts);
+    parent = parent || null;
+    uid = id;
+  }
   return {
-    uid: version ? `${id}:${version}` : id,
+    uid,
     id,
-    version: version ? parseInt(version) : null,
-    parent: parent || null,
+    version,
+    versionNonce: versionNonce || randomInteger(),
+    [PRECEDING_ELEMENT_KEY]: parent || null,
   };
 };
 
 const idsToElements = (
-  ids: Ids,
+  ids: (Id | ElementLike)[],
   cache: Cache = {},
 ): readonly ExcalidrawElement[] => {
   return ids.reduce((acc, _uid, idx) => {
-    const { uid, id, version, parent } = parseId(_uid);
+    const {
+      uid,
+      id,
+      version,
+      [PRECEDING_ELEMENT_KEY]: parent,
+      versionNonce,
+    } = createElement(typeof _uid === "string" ? { uid: _uid } : _uid);
     const cached = cache[uid];
     const elem = {
       id,
       version: version ?? 0,
-      versionNonce: randomInteger(),
+      versionNonce,
       ...cached,
-      parent,
+      [PRECEDING_ELEMENT_KEY]: parent,
     } as BroadcastedExcalidrawElement;
+    // @ts-ignore
     cache[uid] = elem;
     acc.push(elem);
     return acc;
@@ -47,7 +76,7 @@ const idsToElements = (
 
 const addParents = (elements: BroadcastedExcalidrawElement[]) => {
   return elements.map((el, idx, els) => {
-    el.parent = els[idx - 1]?.id || "^";
+    el[PRECEDING_ELEMENT_KEY] = els[idx - 1]?.id || "^";
     return el;
   });
 };
@@ -55,7 +84,7 @@ const addParents = (elements: BroadcastedExcalidrawElement[]) => {
 const cleanElements = (elements: ReconciledElements) => {
   return elements.map((el) => {
     // @ts-ignore
-    delete el.parent;
+    delete el[PRECEDING_ELEMENT_KEY];
     // @ts-ignore
     delete el.next;
     // @ts-ignore
@@ -67,8 +96,8 @@ const cleanElements = (elements: ReconciledElements) => {
 const cloneDeep = (data: any) => JSON.parse(JSON.stringify(data));
 
 const test = <U extends `${string}:${"L" | "R"}`>(
-  local: Ids,
-  remote: Ids,
+  local: (Id | ElementLike)[],
+  remote: (Id | ElementLike)[],
   target: U[],
   bidirectional = true,
 ) => {
@@ -80,6 +109,7 @@ const test = <U extends `${string}:${"L" | "R"}`>(
     return (source === "L" ? _local : _remote).find((e) => e.id === id)!;
   }) as any as ReconciledElements;
   const remoteReconciled = reconcileElements(_local, _remote, {} as AppState);
+  expect(target.length).equal(remoteReconciled.length);
   expect(cleanElements(remoteReconciled)).deep.equal(
     cleanElements(_target),
     "remote reconciliation",
@@ -148,7 +178,7 @@ describe("elements reconciliation", () => {
 
     // non-annotated elements
     // -------------------------------------------------------------------------
-    // usually when we sync elements they should always be annonated with
+    // usually when we sync elements they should always be annotated with
     // their (preceding elements) parents, but let's test a couple of cases when
     // they're not for whatever reason (remote clients are on older version...),
     // in which case the first synced element either replaces existing element
@@ -300,5 +330,93 @@ describe("elements reconciliation", () => {
     test(["A:2", "B:2"], ["B:1", "C"], ["A:L", "B:L", "C:R"]);
     test(["A:2", "B:2"], ["(A)C", "B:1"], ["A:L", "C:R", "B:L"]);
     test(["A:2", "B:2"], ["(A)C", "B:1"], ["A:L", "C:R", "B:L"]);
+  });
+
+  it("test identical elements reconciliation", () => {
+    const testIdentical = (
+      local: ElementLike[],
+      remote: ElementLike[],
+      expected: Id[],
+    ) => {
+      const ret = reconcileElements(
+        local as any as ExcalidrawElement[],
+        remote as any as ExcalidrawElement[],
+        {} as AppState,
+      );
+
+      if (new Set(ret.map((x) => x.id)).size !== ret.length) {
+        throw new Error("reconcileElements: duplicate elements found");
+      }
+
+      expect(ret.map((x) => x.id)).to.deep.equal(expected);
+    };
+
+    // identical id/version/versionNonce
+    // -------------------------------------------------------------------------
+
+    testIdentical(
+      [{ id: "A", version: 1, versionNonce: 1 }],
+      [{ id: "A", version: 1, versionNonce: 1 }],
+      ["A"],
+    );
+    testIdentical(
+      [
+        { id: "A", version: 1, versionNonce: 1 },
+        { id: "B", version: 1, versionNonce: 1 },
+      ],
+      [
+        { id: "B", version: 1, versionNonce: 1 },
+        { id: "A", version: 1, versionNonce: 1 },
+      ],
+      ["B", "A"],
+    );
+    testIdentical(
+      [
+        { id: "A", version: 1, versionNonce: 1 },
+        { id: "B", version: 1, versionNonce: 1 },
+      ],
+      [
+        { id: "B", version: 1, versionNonce: 1 },
+        { id: "A", version: 1, versionNonce: 1 },
+      ],
+      ["B", "A"],
+    );
+
+    // actually identical (arrays and element objects)
+    // -------------------------------------------------------------------------
+
+    const elements1 = [
+      {
+        id: "A",
+        version: 1,
+        versionNonce: 1,
+        [PRECEDING_ELEMENT_KEY]: null,
+      },
+      {
+        id: "B",
+        version: 1,
+        versionNonce: 1,
+        [PRECEDING_ELEMENT_KEY]: null,
+      },
+    ];
+
+    testIdentical(elements1, elements1, ["A", "B"]);
+    testIdentical(elements1, elements1.slice(), ["A", "B"]);
+    testIdentical(elements1.slice(), elements1, ["A", "B"]);
+    testIdentical(elements1.slice(), elements1.slice(), ["A", "B"]);
+
+    const el1 = {
+      id: "A",
+      version: 1,
+      versionNonce: 1,
+      [PRECEDING_ELEMENT_KEY]: null,
+    };
+    const el2 = {
+      id: "B",
+      version: 1,
+      versionNonce: 1,
+      [PRECEDING_ELEMENT_KEY]: null,
+    };
+    testIdentical([el1, el2], [el2, el1], ["A", "B"]);
   });
 });

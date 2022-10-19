@@ -9,6 +9,7 @@
     "copy": "Kopírovat",
     "copyAsPng": "Zkopírovat do schránky jako PNG",
     "copyAsSvg": "Zkopírovat do schránky jako SVG",
+    "copyText": "Zkopírovat do schránky jako text",
     "bringForward": "Přenést blíž",
     "sendToBack": "Přenést do pozadí",
     "bringToFront": "Přenést do popředí",
@@ -35,14 +36,14 @@
     "arrowhead_arrow": "Šipka",
     "arrowhead_bar": "Kóta",
     "arrowhead_dot": "Tečka",
-    "arrowhead_triangle": "",
+    "arrowhead_triangle": "Trojúhelník",
     "fontSize": "Velikost písma",
     "fontFamily": "Písmo",
     "onlySelected": "Pouze vybrané",
-    "withBackground": "",
-    "exportEmbedScene": "",
-    "exportEmbedScene_details": "",
-    "addWatermark": "",
+    "withBackground": "Pozadí",
+    "exportEmbedScene": "Vložit scénu",
+    "exportEmbedScene_details": "Data scény budou uložena do exportovaného souboru PNG/SVG tak, aby z něj mohla být scéna obnovena.\nZvýší se velikost exportovaného souboru.",
+    "addWatermark": "Přidat \"Vyrobeno s Excalidraw\"",
     "handDrawn": "Od ruky",
     "normal": "Normální",
     "code": "Kód",
@@ -50,10 +51,10 @@
     "medium": "Střední",
     "large": "Velké",
     "veryLarge": "Velmi velké",
-    "solid": "",
+    "solid": "Plný",
     "hachure": "",
     "crossHatch": "",
-    "thin": "",
+    "thin": "Tenký",
     "bold": "",
     "left": "",
     "center": "",
@@ -64,9 +65,10 @@
     "cartoonist": "",
     "fileTitle": "",
     "colorPicker": "",
+    "canvasColors": "",
     "canvasBackground": "Pozadí plátna",
     "drawingCanvas": "",
-    "layers": "",
+    "layers": "Vrstvy",
     "actions": "",
     "language": "",
     "liveCollaboration": "",
@@ -85,16 +87,16 @@
     "libraries": "",
     "loadingScene": "",
     "align": "",
-    "alignTop": "",
-    "alignBottom": "",
-    "alignLeft": "",
-    "alignRight": "",
+    "alignTop": "Zarovnat nahoru",
+    "alignBottom": "Zarovnat dolů",
+    "alignLeft": "Zarovnat vlevo",
+    "alignRight": "Zarovnejte vpravo",
     "centerVertically": "",
     "centerHorizontally": "",
     "distributeHorizontally": "",
     "distributeVertically": "",
-    "flipHorizontal": "",
-    "flipVertical": "",
+    "flipHorizontal": "Převrátit vodorovně",
+    "flipVertical": "Převrátit svisle",
     "viewMode": "Náhled",
     "toggleExportColorScheme": "",
     "share": "Sdílet",
@@ -106,11 +108,29 @@
     "decreaseFontSize": "",
     "increaseFontSize": "",
     "unbindText": "",
+    "bindText": "",
     "link": {
       "edit": "",
       "create": "",
       "label": ""
-    }
+    },
+    "lineEditor": {
+      "edit": "",
+      "exit": ""
+    },
+    "elementLock": {
+      "lock": "",
+      "unlock": "",
+      "lockAll": "",
+      "unlockAll": ""
+    },
+    "statusPublished": "",
+    "sidebarLock": ""
+  },
+  "library": {
+    "noItems": "",
+    "hint_emptyLibrary": "",
+    "hint_emptyPrivateLibrary": ""
   },
   "buttons": {
     "clearReset": "",
@@ -163,7 +183,6 @@
     "uploadedSecurly": "",
     "loadSceneOverridePrompt": "",
     "collabStopOverridePrompt": "",
-    "errorLoadingLibrary": "",
     "errorAddingToLibrary": "",
     "errorRemovingFromLibrary": "",
     "confirmAddLibrary": "",
@@ -179,7 +198,9 @@
     "imageInsertError": "",
     "fileTooBig": "",
     "svgImageInsertError": "",
-    "invalidSVGString": ""
+    "invalidSVGString": "",
+    "cannotResolveCollabServer": "",
+    "importLibraryError": ""
   },
   "toolBar": {
     "selection": "Výběr",
@@ -194,7 +215,8 @@
     "library": "",
     "lock": "",
     "penMode": "",
-    "link": ""
+    "link": "",
+    "eraser": ""
   },
   "headings": {
     "canvasActions": "",
@@ -219,7 +241,8 @@
     "placeImage": "",
     "publishLibrary": "",
     "bindTextToElement": "",
-    "deepBoxSelect": ""
+    "deepBoxSelect": "",
+    "eraserRevert": ""
   },
   "canvasError": {
     "cannotShowPreview": "",
@@ -279,14 +302,15 @@
     "howto": "",
     "or": "nebo",
     "preventBinding": "",
-    "shapes": "",
+    "tools": "",
     "shortcuts": "",
     "textFinish": "",
     "textNewLine": "",
     "title": "",
     "view": "",
     "zoomToFit": "",
-    "zoomToSelection": ""
+    "zoomToSelection": "",
+    "toggleElementLock": ""
   },
   "clearCanvasDialog": {
     "title": ""
@@ -328,7 +352,8 @@
       "post": ""
     },
     "noteItems": "",
-    "atleastOneLibItem": ""
+    "atleastOneLibItem": "",
+    "republishWarning": ""
   },
   "publishSuccessDialog": {
     "title": "",

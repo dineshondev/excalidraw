@@ -12,7 +12,7 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, outputDir),
-    library: "Excalidraw",
+    library: "ExcalidrawLib",
     libraryTarget: "umd",
     filename: "[name].js",
     chunkFilename: "excalidraw-assets-dev/[name]-[contenthash].js",
@@ -44,7 +44,7 @@ module.exports = {
       },
       {
         test: /\.(ts|tsx|js|jsx|mjs)$/,
-        exclude: /node_modules/,
+        exclude: /node_modules\/(?!browser-fs-access)/,
         use: [
           {
             loader: "ts-loader",

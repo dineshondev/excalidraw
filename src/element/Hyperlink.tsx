@@ -32,6 +32,7 @@ import { getElementAbsoluteCoords } from "./";
 
 import "./Hyperlink.scss";
 import { trackEvent } from "../analytics";
+import { useExcalidrawAppState } from "../components/App";
 
 const CONTAINER_WIDTH = 320;
 const SPACE_BOTTOM = 85;
@@ -48,15 +49,15 @@ let IS_HYPERLINK_TOOLTIP_VISIBLE = false;
 
 export const Hyperlink = ({
   element,
-  appState,
   setAppState,
   onLinkOpen,
 }: {
   element: NonDeletedExcalidrawElement;
-  appState: AppState;
   setAppState: React.Component<any, AppState>["setState"];
   onLinkOpen: ExcalidrawProps["onLinkOpen"];
 }) => {
+  const appState = useExcalidrawAppState();
+
   const linkVal = element.link || "";
 
   const [inputVal, setInputVal] = useState(linkVal);
@@ -262,9 +263,7 @@ export const actionLink = register({
       commitToHistory: true,
     };
   },
-  trackEvent: (action, source) => {
-    trackEvent("hyperlink", "edit", source);
-  },
+  trackEvent: { category: "hyperlink", action: "click" },
   keyTest: (event) => event[KEYS.CTRL_OR_CMD] && event.key === KEYS.K,
   contextItemLabel: (elements, appState) =>
     getContextMenuLabel(elements, appState),
@@ -337,6 +336,9 @@ export const isPointHittingLinkIcon = (
   [x, y]: Point,
   isMobile: boolean,
 ) => {
+  if (!element.link || appState.selectedElementIds[element.id]) {
+    return false;
+  }
   const threshold = 4 / appState.zoom.value;
   if (
     !isMobile &&

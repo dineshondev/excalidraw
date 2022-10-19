@@ -9,6 +9,7 @@
     "copy": "Kopieren",
     "copyAsPng": "In Zwischenablage kopieren (PNG)",
     "copyAsSvg": "In Zwischenablage kopieren (SVG)",
+    "copyText": "In die Zwischenablage als Text kopieren",
     "bringForward": "Nach vorne",
     "sendToBack": "In den Hintergrund",
     "bringToFront": "In den Vordergrund",
@@ -64,6 +65,7 @@
     "cartoonist": "Karikaturist",
     "fileTitle": "Dateiname",
     "colorPicker": "Farbauswähler",
+    "canvasColors": "Auf Leinwand verwendet",
     "canvasBackground": "Zeichenflächenhintergrund",
     "drawingCanvas": "Leinwand",
     "layers": "Ebenen",
@@ -106,11 +108,29 @@
     "decreaseFontSize": "Schrift verkleinern",
     "increaseFontSize": "Schrift vergrößern",
     "unbindText": "Text lösen",
+    "bindText": "Text an Container binden",
     "link": {
       "edit": "Link bearbeiten",
       "create": "Link erstellen",
       "label": "Link"
-    }
+    },
+    "lineEditor": {
+      "edit": "Linie bearbeiten",
+      "exit": "Linieneditor verlassen"
+    },
+    "elementLock": {
+      "lock": "Sperren",
+      "unlock": "Entsperren",
+      "lockAll": "Alle sperren",
+      "unlockAll": "Alle entsperren"
+    },
+    "statusPublished": "Veröffentlicht",
+    "sidebarLock": "Seitenleiste offen lassen"
+  },
+  "library": {
+    "noItems": "Noch keine Elemente hinzugefügt...",
+    "hint_emptyLibrary": "Wähle ein Element auf der Zeichenfläche, um es hier hinzuzufügen. Oder installiere eine Bibliothek aus dem öffentlichen Verzeichnis.",
+    "hint_emptyPrivateLibrary": "Wähle ein Element von der Zeichenfläche, um es hier hinzuzufügen."
   },
   "buttons": {
     "clearReset": "Zeichenfläche löschen & Hintergrundfarbe zurücksetzen",
@@ -158,12 +178,11 @@
     "couldNotLoadInvalidFile": "Ungültige Datei konnte nicht geladen werden",
     "importBackendFailed": "Import vom Server ist fehlgeschlagen.",
     "cannotExportEmptyCanvas": "Leere Zeichenfläche kann nicht exportiert werden.",
-    "couldNotCopyToClipboard": "Konnte nicht in die Zwischenablage kopieren. Versuch es mit dem Chrome Browser.",
+    "couldNotCopyToClipboard": "Kopieren in die Zwischenablage fehlgeschlagen.",
     "decryptFailed": "Daten konnten nicht entschlüsselt werden.",
     "uploadedSecurly": "Der Upload wurde mit Ende-zu-Ende-Verschlüsselung gespeichert. Weder Excalidraw noch Dritte können den Inhalt einsehen.",
     "loadSceneOverridePrompt": "Das Laden einer externen Zeichnung ersetzt den vorhandenen Inhalt. Möchtest du fortfahren?",
     "collabStopOverridePrompt": "Das Stoppen der Sitzung wird deine vorherige, lokal gespeicherte Zeichnung überschreiben. Bist du dir sicher?\n\n(Wenn du deine lokale Zeichnung behalten möchtest, schließe stattdessen den Browser-Tab.)",
-    "errorLoadingLibrary": "Beim Laden der Drittanbieter-Bibliothek ist ein Fehler aufgetreten.",
     "errorAddingToLibrary": "Das Element konnte nicht zur Bibliothek hinzugefügt werden",
     "errorRemovingFromLibrary": "Das Element konnte nicht aus der Bibliothek entfernt werden",
     "confirmAddLibrary": "Dies fügt {{numShapes}} Form(en) zu deiner Bibliothek hinzu. Bist du dir sicher?",
@@ -179,7 +198,9 @@
     "imageInsertError": "Das Bild konnte nicht eingefügt werden. Versuche es später erneut...",
     "fileTooBig": "Die Datei ist zu groß. Die maximal zulässige Größe ist {{maxSize}}.",
     "svgImageInsertError": "SVG-Bild konnte nicht eingefügt werden. Das SVG-Markup sieht ungültig aus.",
-    "invalidSVGString": "Ungültige SVG."
+    "invalidSVGString": "Ungültige SVG.",
+    "cannotResolveCollabServer": "Konnte keine Verbindung zum Collab-Server herstellen. Bitte lade die Seite neu und versuche es erneut.",
+    "importLibraryError": "Bibliothek konnte nicht geladen werden"
   },
   "toolBar": {
     "selection": "Auswahl",
@@ -193,8 +214,9 @@
     "text": "Text",
     "library": "Bibliothek",
     "lock": "Ausgewähltes Werkzeug nach Zeichnen aktiv lassen",
-    "penMode": "",
-    "link": "Link für ausgewählte Form hinzufügen / aktualisieren"
+    "penMode": "Verhindere Pinch-Zoom und akzeptiere Eingabe nur vom Stift",
+    "link": "Link für ausgewählte Form hinzufügen / aktualisieren",
+    "eraser": "Radierer"
   },
   "headings": {
     "canvasActions": "Aktionen für Zeichenfläche",
@@ -219,7 +241,8 @@
     "placeImage": "Klicken, um das Bild zu platzieren oder klicken und ziehen um seine Größe manuell zu setzen",
     "publishLibrary": "Veröffentliche deine eigene Bibliothek",
     "bindTextToElement": "Zum Hinzufügen Eingabetaste drücken",
-    "deepBoxSelect": "Halte CtrlOrCmd gedrückt, um innerhalb der Gruppe auszuwählen, und um Ziehen zu vermeiden"
+    "deepBoxSelect": "Halte CtrlOrCmd gedrückt, um innerhalb der Gruppe auszuwählen, und um Ziehen zu vermeiden",
+    "eraserRevert": "Halte Alt gedrückt, um die zum Löschen markierten Elemente zurückzusetzen"
   },
   "canvasError": {
     "cannotShowPreview": "Vorschau kann nicht angezeigt werden",
@@ -279,14 +302,15 @@
     "howto": "Folge unseren Anleitungen",
     "or": "oder",
     "preventBinding": "Pfeil-Bindung verhindern",
-    "shapes": "Formen",
+    "tools": "Werkzeuge",
     "shortcuts": "Tastaturkürzel",
     "textFinish": "Bearbeitung beenden (Texteditor)",
     "textNewLine": "Neue Zeile hinzufügen (Texteditor)",
     "title": "Hilfe",
     "view": "Ansicht",
     "zoomToFit": "Zoomen um alle Elemente einzupassen",
-    "zoomToSelection": "Auf Auswahl zoomen"
+    "zoomToSelection": "Auf Auswahl zoomen",
+    "toggleElementLock": "Auswahl sperren/entsperren"
   },
   "clearCanvasDialog": {
     "title": "Zeichenfläche löschen"
@@ -328,7 +352,8 @@
       "post": "die zusammengefasst beinhaltet, dass jeder sie ohne Einschränkungen nutzen kann."
     },
     "noteItems": "Jedes Bibliothekselement muss einen eigenen Namen haben, damit es gefiltert werden kann. Die folgenden Bibliothekselemente werden hinzugefügt:",
-    "atleastOneLibItem": "Bitte wähle mindestens ein Bibliothekselement aus, um zu beginnen"
+    "atleastOneLibItem": "Bitte wähle mindestens ein Bibliothekselement aus, um zu beginnen",
+    "republishWarning": "Hinweis: Einige der ausgewählten Elemente sind bereits als veröffentlicht/eingereicht markiert. Du solltest Elemente nur erneut einreichen, wenn Du eine existierende Bibliothek oder Einreichung aktualisierst."
   },
   "publishSuccessDialog": {
     "title": "Bibliothek übermittelt",
